@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 
 # GitHub/GitLab/Bitbucket
 
-AI/Run CodeMie assistants can work with Git repositories. Besides the Git tool itself, an assistant needs to know which repository to work on. It gets that from either an indexed Code data source attached to the assistant, or the repository URL that the user or the assistant instructions name in the conversation. With the second option, no data source is needed. See [Choose Which Repository the Git Tools Use](#3-choose-which-repository-the-git-tools-use).
+AI/Run CodeMie assistants can work with Git repositories. Besides the Git tool itself, an assistant needs to know which repository to work on. It gets that from either an indexed Code data source attached to the assistant, or the repository URL and branch named in the assistant instructions. With the second option, no data source is needed. See [Choose Which Repository the Git Tools Use](#3-choose-which-repository-the-git-tools-use).
 
 Integrating Version Control Systems allows assistants to navigate code repositories and perform various actions, whether it is simple code analysis or creating pull requests with code that solves the problem indicated in a Jira task. This integration is required when adding a code repository.
 
@@ -214,23 +214,36 @@ In the assistant form, add the **Git** toolkit under **Tools configuration** and
 
 ### Without a Code data source
 
-The Git tools work on the repository URL named in the conversation or in the assistant instructions, for example `https://github.com/org/repo`. Every Git tool call passes this URL. If no repository has been named, the assistant asks for one. Each call can also name a **branch**. When no branch is named, the tool uses the branch created or set active earlier in the same response, or the repository's default branch.
+Name the repository URL and the branch in the assistant instructions, for example:
 
-The credentials come from your Git integrations:
+```text
+Work on the repository https://github.com/org/repo. Use the branch develop, and open pull requests into main.
+```
 
-| Git integration selected on the Git toolkit or its tools | Repositories the tools can use                                                                                                |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| One integration                                          | Only repositories on that integration's host. A URL on any other host is rejected before the integration's token is used.     |
-| None                                                     | Repositories on any host that has a Git integration available to you. Each call uses the integration matching the URL's host. |
-| Different integrations on the toolkit and its tools      | None. The form shows a **Select one Git integration** warning next to **Tools configuration**. Select a single integration.   |
+The assistant passes the repository URL and the branch on every Git tool call:
+
+- Tools that work on a branch, such as reading, creating, updating or deleting files, take the **branch** on every call. The branch is not remembered between calls, and the repository's default branch is never used in its place.
+- **Create branch** takes the branch to start from. **Create pull request** takes the source branch and the **base branch** the pull request merges into.
+- Tools that do not work on a branch, such as listing branches or reading pull request changes, take only the repository URL.
+
+If the repository URL or a required branch is missing, the tool returns an error asking for it from the assistant instructions instead of guessing.
+
+The credentials come from the Git integration selected on the Git toolkit:
+
+| Git integration selected on the Git toolkit or its tools | Repositories the tools can use                                                                                                                                                     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One integration                                          | Only repositories on that integration's host. A URL on any other host is rejected before the integration's token is used.                                                          |
+| None                                                     | None. No Git tools are available. When you save the assistant, the Git tools are listed as needing an integration that is not configured. Select a Git integration on the toolkit. |
+| Different integrations on the toolkit and its tools      | None. No Git tools are available. Select a single Git integration.                                                                                                                 |
 
 :::note
 
-- Repository URLs must use the same scheme as the integration URL (normally `https`) and must not contain credentials.
+- Repository URLs must use the same scheme and host as the integration URL (normally `https`) and must not contain credentials.
 - This mode supports GitHub, GitLab, and Bitbucket. **Azure DevOps Repos** still needs a Code data source. See [Azure DevOps](./git-azuredevops.md).
+- On GitHub, the Git tools still refuse to write directly to the repository's default branch. On GitLab and Bitbucket, writes go to the branch the assistant names; use the provider's protected-branch settings to restrict them.
 
 :::
 
 ### With a Code data source
 
-The Git tools work on the indexed repository of the attached Code data source. If a Git integration is also selected on the Git toolkit, the user can name another repository in the conversation. The tools then work on that repository instead, limited to the selected integration's host.
+The Git tools work on the indexed repository of the attached Code data source, and do not take a repository URL. This does not change when a Git integration is also selected on the Git toolkit.
